@@ -23,12 +23,10 @@ console.log(a)
 var un:undefined
 console.log(un)
 
-function run() {
+function run():void {
     console.log('run')
 }
 run()
 //never 不会出现的值，是其它类型(包括null,undefined)的子类型
-var ne:never
-ne=(()=>{
-    throw new Error('错误')
-})()
+var aa:[string,string]=['a','b']
+var bb:string[]=['a']
