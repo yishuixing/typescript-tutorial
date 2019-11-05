@@ -103,10 +103,103 @@
 ###4.6 命名空间和模块
     像命名空间一样，模块可以包含代码和声明。 不同的是模块可以 声明它的依赖
 ###5.1 模块解析
+    相对导入是以/，./或../开头的,所有其它形式的导入被当作非相对的
+    相对导入在解析时是相对于导入它的文件，并且不能解析为一个外部模块声明. 你应该为你自己写的模块使用相对导入，这样能确保它们在运行时的相对位置
+    非相对模块的导入可以相对于baseUrl或通过下文会讲到的路径映射来进行解析。 它们还可以被解析成 外部模块声明。 使用非相对路径来导入你的外部依赖
+    模块解析策略
+    共有两种可用的模块解析策略：Node和Classic。 你可以使用 --moduleResolution标记来指定使用哪种模块解析策略。若未指定，那么在使用了 --module AMD | System | ES2015时的默认值为Classic，其它情况时则为Node
+    Classic
+    相对导入的模块是相对于导入它的文件进行解析的。 因此 /root/src/folder/A.ts文件里的import { b } from "./moduleB"会使用下面的查找流程：
+    
+    1. /root/src/folder/moduleB.ts
+    2. /root/src/folder/moduleB.d.ts
+    
+    这种策略在以前是TypeScript默认的解析策略。 现在，它存在的理由主要是为了向后兼容
+    对于非相对模块的导入，编译器则会从包含导入文件的目录开始依次向上级目录遍历，尝试定位匹配的声明文件
+    Node
+    相对路径很简单。 例如，假设有一个文件路径为 /root/src/moduleA.js，包含了一个导入var x = require("./moduleB"); Node.js以下面的顺序解析这个导入：
+    
+    检查/root/src/moduleB.js文件是否存在。  
+    检查/root/src/moduleB目录是否包含一个package.json文件，且package.json文件指定了一个"main"模块。 在我们的例子里，如果Node.js发现文件 /root/src/moduleB/package.json包含了{ "main": "lib/mainModule.js" }，那么Node.js会引用/root/src/moduleB/lib/mainModule.js。 
+    检查/root/src/moduleB目录是否包含一个index.js文件。 这个文件会被隐式地当作那个文件夹下的"main"模块
+    
+    非相对模块名的解析是个完全不同的过程。 Node会在一个特殊的文件夹 node_modules里查找你的模块。 node_modules可能与当前文件在同一级目录下，或者在上层目录里。 Node会向上级目录遍历，查找每个 node_modules直到它找到要加载的模块
+####5.1.3 TypeScript如何解析模块
+    
+    TypeScript是模仿Node.js运行时的解析策略来在编译阶段定位模块定义文件。 因此，TypeScript在Node解析逻辑基础上增加了TypeScript源文件的扩展名（ .ts，.tsx和.d.ts）。 同时，TypeScript在 package.json里使用字段"types"来表示类似"main"的意义 - 编译器会使用它来找到要使用的"main"定义文件。
+    非相对的导入会遵循Node.js的解析逻辑，首先查找文件，然后是合适的文件夹 node_modules
+####5.1.4 附加的模块解析标记
+    baseUrl的值由以下两者之一决定：
+    
+    命令行中baseUrl的值（如果给定的路径是相对的，那么将相对于当前路径进行计算）
+    ‘tsconfig.json’里的baseUrl属性（如果给定的路径是相对的，那么将相对于‘tsconfig.json’路径进行计算
+    注意相对模块的导入不会被设置的baseUrl所影响，因为它们总是相对于导入它们的文件
+####5.1.5 路径映射
+    TypeScript编译器通过使用tsconfig.json文件里的"paths"来支持这样的声明映射。 下面是一个如何指定 jquery的"paths"的例子。
+    
+    {
+      "compilerOptions": {
+        "baseUrl": ".", // This must be specified if "paths" is.
+        "paths": {
+          "jquery": ["node_modules/jquery/dist/jquery"] // 此处映射是相对于"baseUrl"
+        }
+      }
+    }
+    利用rootDirs指定虚拟目录
+    启用编译器的模块解析跟踪，它会告诉我们在模块解析过程中发生了什么
+    使用--traceResolution调用编译器    
 ###5.2 声明合并
+    typeScript中的声明会创建以下三种实体之一：命名空间，类型或值
+    合并接口
+    interface Box {
+        height: number;
+        width: number;
+    }
+    
+    interface Box {
+        scale: number;
+    }
+    
+    let box: Box = {height: 5, width: 6, scale: 10};
+    合并命名空间
+    命名空间与类和函数和枚举类型合并
+    
+    TypeScript并非允许所有的合并。 目前，类不能与其它类或变量合并。 想要了解如何模仿类的合并，请参考 TypeScript的混入
+    
 ###5.3 JSX
+    TypeScript支持内嵌，类型检查以及将JSX直接编译为JavaScript。
+    想要使用JSX必须做两件事：
+    
+    给文件一个.tsx扩展名
+    启用jsx选项 通过在命令行里使用--jsx标记或tsconfig.json里的选项来指定模式
+    类型断言
+    var foo = <foo>bar
+    var foo = bar as foo
 ###5.4 装饰器
+    pass
 ###5.5 ixins
+    pass
 ###5.6 三斜线指令
+    三斜线指令是包含单个XML标签的单行注释。 注释的内容会做为编译器指令使用
+    三斜线指令仅可放在包含它的文件的最顶端。 一个三斜线指令的前面只能出现单行或多行注释，这包括其它的三斜线指令。 如果它们出现在一个语句或声明之后，那么它们会被当做普通的单行注释，并且不具有特殊的涵义
+    
 ###5.7 JavaScript文件类型检查
+    TypeScript 2.3以后的版本支持使用--checkJs对.js文件进行类型检查和错误提示
+    用JSDoc类型表示类型信息
+    .js文件里，类型可以和在.ts文件里一样被推断出来。 同样地，当类型不能被推断时，它们可以通过JSDoc来指定，就好比在.ts文件里那样。 如同TypeScript，--noImplicitAny会在编译器无法推断类型的位置报错
+    支持的JSDoc
+    下面的列表列出了当前所支持的JSDoc注解，你可以用它们在JavaScript文件里添加类型信息。
+    
+    注意，没有在下面列出的标记（例如@async）都是还不支持的。
+    
+    @type
+    @param (or @arg or @argument)
+    @returns (or @return)
+    @typedef
+    @callback
+    @template
+    @class (or @constructor)
+    @this
+    @extends (or @augments)
+    @enum
  
