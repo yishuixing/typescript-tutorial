@@ -92,7 +92,7 @@
     
     若使用export =导出一个模块，则必须使用TypeScript的特定语法import module = require("module")来导入此模块
     
-###4.4 使用其它的JavaScript库
+### 4.4 使用其它的JavaScript库
     要想描述非TypeScript编写的类库的类型，我们需要声明类库所暴露出的API。
 
     我们叫它声明因为它不是“外部程序”的具体实现。 它们通常是在 .d.ts文件里定义的。 如果你熟悉C/C++，你可以把它们当做 .h文件
